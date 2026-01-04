@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Movie Zone</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<!-- Firebase SDK + Analytics (එකතු කළේ මේක විතරයි) -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getAnalytics, logEvent } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js";
+  import { getFirestore } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDg6GbxExX_TqAC8zCaQA0mMwWLtdxX65s",
+    authDomain: "moviezone-f9986.firebaseapp.com",
+    projectId: "moviezone-f9986",
+    storageBucket: "moviezone-f9986.firebasestorage.app",
+    messagingSenderId: "853315638948",
+    appId: "1:853315638948:web:c370f49bf4a8d921227831",
+    measurementId: "G-XZK107M6LB"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+  logEvent(analytics, 'page_view'); // Visitor track කරනවා
+
+  const db = getFirestore(app); // Future use සඳහා (movies load කරන්න)
+  window.db = db; // Global access
+</script>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Poppins}
+body{background:#0c0c0c;color:#fff;overflow-x:hidden}
+header{
+  background:linear-gradient(120deg,#0f2027,#203a43,#2c5364);
+  padding:30px 20px;text-align:center;animation:fadeDown 1s ease;
+}
+header h1{font-size:32px;letter-spacing:2px}
+header p{opacity:1;margin-top:8px;color:#ff0000;font-weight:600;}
+.channels{display:flex;justify-content:center;gap:15px;margin-top:20px;flex-wrap:wrap}
+.channel-btn{
+  background:#0088cc;padding:12px 18px;border-radius:30px;color:#fff;text-decoration:none;
+  display:flex;align-items:center;gap:10px;transition:.3s
+}
+.channel-btn:hover{transform:scale(1.08);background:#00aaff}
+nav{display:flex;justify-content:center;gap:25px;padding:14px;background:#000;flex-wrap:wrap}
+nav button{
+  background:none;border:none;color:#fff;font-size:16px;cursor:pointer;position:relative;margin:5px;
+}
+nav button::after{
+  content:"";position:absolute;width:0;height:2px;background:#00ffd5;left:0;bottom:-6px;transition:.3s;
+}
+nav button:hover::after{width:100%}
+.page{display:none;padding:20px 15px}
+.active{display:block;animation:fadeUp .8s ease}
+.hero{
+  max-width:1000px;margin:auto;padding:40px 30px;border-radius:20px;
+  background:linear-gradient(135deg,#0f2027,#203a43,#2c5364);
+  box-shadow:0 0 60px rgba(0,255,213,.25);text-align:center;animation:zoomIn 1s ease
+}
+.hero h2{font-size:32px;margin-bottom:10px;animation:glow 2s infinite alternate}
+.hero p{opacity:.9;margin-bottom:10px}
+.hero .details{opacity:.85;font-size:14px;margin-top:10px;line-height:1.5}
+.hero .details span{
+  background:#0088cc;padding:5px 12px;border-radius:15px;margin:5px;display:inline-block;
+  font-size:13px;
+}
+.hero .hero-btn{
+  display:inline-block;margin-top:15px;padding:12px 22px;border-radius:30px;background:#e50914;color:#fff;font-weight:600;text-decoration:none;transition:.3s;
+}
+.hero .hero-btn:hover{transform:scale(1.05);background:#ff3b3b;}
+.movies-section{margin-top:40px;}
+.movies-section h2{text-align:center;margin-bottom:20px;}
+.movies{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+  gap:20px;
+}
+.card{
+  background:#141414;border-radius:12px;overflow:hidden;position:relative;transition:.4s;cursor:pointer;
+}
+.card:hover{transform:translateY(-8px) scale(1.03);box-shadow:0 0 20px #ff003c55;}
+.card img{width:100%;height:300px;object-fit:cover;border-radius:12px;transition:.4s;}
+.card:hover img{transform:scale(1.05);}
+.tag{position:absolute;top:8px;left:8px;background:#e50914;padding:3px 6px;font-size:11px;border-radius:4px}
+.rate{position:absolute;top:8px;right:8px;background:#f5c518;color:#000;padding:3px 6px;font-size:11px;border-radius:4px;font-weight:600}
+.info{padding:8px}
+.info h3{font-size:14px;line-height:1.2;margin-bottom:4px}
+.info p{font-size:12px;opacity:.8}
+
+/* Top 1 Movie - Center horizontally on Home Page */
+.top-movie-section {
+  max-width: 400px;
+  margin: 50px auto;  /* centers horizontally */
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Center the card inside the movies div */
+.top-movie-section .movies {
+  display: flex;
+  justify-content: center; /* horizontal center */
+}
+
+/* Download Page */
+.download-page{
+  display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);
+  justify-content:center;align-items:center;z-index:999;padding:20px;
+}
+.download-page.active{display:flex;}
+.download-box{
+  background:#111;max-width:600px;width:100%;border-radius:20px;overflow:hidden;
+  box-shadow:0 0 60px rgba(0,255,213,.3);text-align:center;
+}
+.download-box img{width:100%;max-height:500px;object-fit:contain;background:#000;}
+.download-content{padding:30px;}
+.download-content h2{font-size:28px;margin-bottom:15px;color:#00ffd5;}
+.download-content p{line-height:1.7;opacity:.9;margin-bottom:25px;}
+.download-btns{display:flex;gap:15px;justify-content:center;flex-wrap:wrap;}
+.download-btns a{
+  flex:1;min-width:200px;padding:15px;border-radius:30px;font-weight:600;text-decoration:none;
+  display:flex;align-items:center;justify-content:center;gap:10px;transition:.3s;
+}
+.google-btn{background:#4285f4;color:#fff;}
+.google-btn:hover{background:#3367d6;transform:scale(1.05);}
+.telegram-btn{background:#0088cc;color:#fff;}
+.telegram-btn:hover{background:#00aaff;transform:scale(1.05);}
+.close-download{
+  position:absolute;top:20px;right:30px;font-size:30px;color:#fff;cursor:pointer;opacity:.7;transition:.3s;
+}
+.close-download:hover{opacity:1;transform:rotate(90deg);}
+
+/* POPUP */
+#popup{
+  position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.85);
+  display:flex;justify-content:center;align-items:center;z-index:999;
+  visibility:hidden;opacity:0;transition:.3s;
+}
+#popup.active{visibility:visible;opacity:1;}
+#popup .box{
+  background:#111;padding:25px;border-radius:15px;text-align:center;max-width:400px;
+  animation:zoomIn .4s ease;
+}
+#popup .box h3{margin-bottom:10px;color:#ff003c}
+#popup .box p{margin-bottom:10px;}
+#popup .box button{
+  padding:10px 18px;border:none;border-radius:12px;background:#0088cc;color:#fff;font-weight:600;
+  cursor:pointer;transition:.3s;margin-top:15px;
+}
+#popup .box button:hover{background:#00aaff;transform:scale(1.05)}
+
+.social-btns{
+  display:flex;justify-content:center;gap:20px;margin-top:20px;flex-wrap:wrap;
+}
+.social-btns a{
+  display:flex;align-items:center;gap:8px;padding:12px 20px;border-radius:30px;background:#0088cc;color:#fff;text-decoration:none;transition:.3s;
+}
+.social-btns a.youtube{background:#ff0000;}
+.social-btns a.telegram{background:#0088cc;}
+.social-btns a:hover{transform:scale(1.05)}
+footer{text-align:center;padding:15px;background:#000;opacity:.6;}
+
+/* Feedback Page */
+.feedback-form{max-width:600px;margin:30px auto;background:#141414;padding:30px;border-radius:15px;box-shadow:0 0 50px rgba(0,255,213,.3);}
+.feedback-form h2{margin-bottom:15px;color:#00ffd5;text-align:center;}
+.feedback-form input, .feedback-form textarea{width:100%;padding:12px 15px;margin-bottom:15px;border-radius:10px;border:none;background:#222;color:#fff;}
+.feedback-form button{background:#0088cc;color:#fff;padding:12px 20px;border:none;border-radius:30px;font-weight:600;cursor:pointer;transition:.3s;display:block;margin:auto;}
+.feedback-form button:hover{background:#00aaff;transform:scale(1.05);}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeDown{from{opacity:0;transform:translateY(-40px)}to{opacity:1;transform:translateY(0)}}
+@keyframes zoomIn{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
+@keyframes glow{from{text-shadow:0 0 10px #00ffd5}to{text-shadow:0 0 30px #6a00ff}}
+@media(max-width:768px){
+  .hero h2{font-size:26px;}
+  .card img{height:220px;}
+  .download-btns{flex-direction:column;}
+  .top-movie-section{max-width:100%;}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🎬 MOVIE ZONE</h1>
+  <p>අපෙ සයිට් එකේ ඇඩ් කරලා තියෙන හැම Movie එකකටම Sinhala Subtitle ඇඩ් කරලා තියෙන්නෙ  (Sinhala & English)</p>
+  <div class="channels">
+    <a class="channel-btn" href="https://t.me/Movie_Zone_Vip" target="_blank">
+      <i class="fab fa-telegram"></i> Movie Channel
+    </a>
+    <a class="channel-btn" href="https://t.me/Tv_Series_Hub_Lk" target="_blank">
+      <i class="fab fa-telegram"></i> TV Series
+    </a>
+  </div>
+</header>
+
+<nav>
+  <button onclick="showPage('home')" class="nav-btn active">
+    <i class="fas fa-home"></i> Home
+  </button>
+  <button onclick="showPage('movie')" class="nav-btn">
+    <i class="fas fa-film"></i> Movies
+  </button>
+  <button onclick="showPage('about')" class="nav-btn">
+    <i class="fas fa-info-circle"></i> About
+  </button>
+  <button onclick="showPage('social')" class="nav-btn">
+    <i class="fas fa-share-alt"></i> Social Media
+  </button>
+  <button onclick="showPage('feedback')" class="nav-btn">
+    <i class="fas fa-comment-dots"></i> Feedback
+  </button>
+</nav>
+
+<!-- HOME PAGE -->
+<div id="home" class="page active">
+  <div class="hero">
+    <h2>Welcome to Movie Zone</h2>
+    <p>Premium SinhalaSub Movies & TV Series on Telegram</p>
+    <div class="details">
+      <span>Subscribe 3k</span>
+      <span>Daily Movie Update</span>
+      <span>18+ Only</span>
+    </div>
+    <a href="javascript:void(0)" class="hero-btn" onclick="showPage('movie')">18+ Movies</a>
+  </div>
+
+  <!-- Top 1 Movie - Centered -->
+  <div class="top-movie-section">
+    <h2>🔥 Top 1 Movie</h2>
+    <div class="movies">
+      <div class="card" onclick="showPopupThenDownload('top1')">
+        <span class="tag">18+</span>
+        <span class="rate">⭐ 8.2</span>
+        <img src="https://files.catbox.moe/obobt3.jpg" alt="Top Movie">
+        <div class="info">
+          <h3>MaXxxine</h3>
+          <p>18+ / Thriller / Drama</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MOVIE PAGE -->
+<div id="movie" class="page">
+  <!-- Trending Movies (18+) -->
+  <div class="movies-section">
+    <h2>🔥 Trending 18+ Movies</h2>
+    <div class="movies">
+      <div class="card" onclick="showPopupThenDownload('trending1')">
+        <span class="tag">18+</span><span class="rate">⭐ 7.9</span>
+        <img src="https://files.catbox.moe/obobt3.jpg">
+        <div class="info"><h3>Maxxine</h3><p>18+ / Drama</p></div>
+      </div>
+      <div class="card" onclick="showPopupThenDownload('trending2')">
+        <span class="tag">18+</span><span class="rate">⭐ 7.5</span>
+        <img src="https://files.catbox.moe/y7jg05.jpg">
+        <div class="info"><h3>hate Story 2012</h3><p>Action / Drama</p></div>
+      </div>
+      <div class="card" onclick="showPopupThenDownload('trending3')">
+        <span class="tag">18+</span><span class="rate">⭐ 7.3</span>
+        <img src="https://files.catbox.moe/y45yic.jpg">
+        <div class="info"><h3>Hate Story 2014</h3><p>18+ / History</p></div>
+      </div>
+      <div class="card" onclick="showPopupThenDownload('trending4')">
+        <span class="tag">18+</span><span class="rate">⭐ 7.1</span>
+        <img src="https://files.catbox.moe/ev642m.jpg">
+        <div class="info"><h3>Hate Story 2015</h3><p>18+ / Thriller</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Action Movies -->
+  <div class="movies-section">
+    <h2>🎬 Action Movies</h2>
+    <div class="movies">
+      <div class="card" onclick="showDownload('action1')">
+        <span class="tag">18+</span><span class="rate">⭐ 7.0</span>
+        <img src="https://files.catbox.moe/85zort.jpg">
+        <div class="info"><h3>Dawood</h3><p>Action / Drama</p></div>
+      </div>
+      <div class="card" onclick="showDownload('action2')">
+        <span class="tag">18+</span><span class="rate">⭐ 6.9</span>
+        <img src="https://files.catbox.moe/lkqj8w.jpg">
+        <div class="info"><h3>Kalamkaval</h3><p>Action / Thriller</p></div>
+      </div>
+      <div class="card" onclick="showDownload('action3')">
+        <span class="tag">18+</span><span class="rate">⭐ 7.2</span>
+        <img src="https://files.catbox.moe/hcgzne.jpg">
+        <div class="info"><h3>Hunting Season</h3><p>Action</p></div>
+      </div>
+      <div class="card" onclick="showDownload('action4')">
+        <span class="tag">18+</span><span class="rate">⭐ 6.8</span>
+        <img src="https://files.catbox.moe/i5icdn.jpg">
+        <div class="info"><h3>Nuremberg</h3><p>Action</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sinhala Sub Cartoons -->
+  <div class="movies-section">
+    <h2>🎨 Sinhala Sub Cartoons</h2>
+    <div class="movies">
+      <div class="card" onclick="showDownload('cartoon1')">
+        <span class="tag">All Age</span>
+        <img src="https://files.catbox.moe/3ahnvh.jpg">
+        <div class="info"><h3>A Named Charli</h3><p>Sinhala Sub</p></div>
+      </div>
+      <div class="card" onclick="showDownload('cartoon2')">
+        <span class="tag">All Age</span>
+        <img src="https://i.imgur.com/2n5L8rT.jpg">
+        <div class="info"><h3>Cartoon Fun 2</h3><p>Sinhala Sub</p></div>
+      </div>
+      <div class="card" onclick="showDownload('cartoon3')">
+        <span class="tag">All Age</span>
+        <img src="https://i.imgur.com/3n5L7rT.jpg">
+        <div class="info"><h3>Cartoon Fun 3</h3><p>Sinhala Sub</p></div>
+      </div>
+      <div class="card" onclick="showDownload('cartoon4')">
+        <span class="tag">All Age</span>
+        <img src="https://i.imgur.com/4n5L6rT.jpg">
+        <div class="info"><h3>Cartoon Fun 4</h3><p>Sinhala Sub</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ABOUT PAGE -->
+<div id="about" class="page">
+  <h2 style="text-align:center;margin-bottom:30px;color:#00ffd5;">📖 About Movie Zone</h2>
+  <div class="hero" style="background:linear-gradient(135deg,#1c1c1c,#444); padding:50px 30px; border-radius:20px; max-width:1000px; margin:auto; box-shadow:0 0 80px rgba(0,255,213,0.3);">
+    <p style="font-size:17px; line-height:1.9; color:#fff; margin-bottom:20px;">
+      <span style="color:#00ffd5; font-weight:700; font-size:19px;">Movie Zone</span> යනු <span style="color:#ff003c; font-weight:600;">Sinhala Subtitle සහිත Premium Movies සහ TV Series</span> සඳහා වන ප්‍රමුඛ Telegram ප්ලැට්ෆෝමයකි. අපි අපගේ subscribersලාට <span style="background:#0088cc; padding:4px 10px; border-radius:10px; color:#fff;">දිනපතා high-quality updates</span> ලබාදෙමින් premium අත්දැකීමක් ලබාදෙනවා.
+    </p>
+
+    <p style="font-size:16px; line-height:1.8; color:#ddd; margin-bottom:20px;">
+      අපගේ ප්‍රධාන අරමුණ වන්නේ <span style="color:#ff9900; font-weight:600;">වගකීම් සහගතව curated 18+ content</span> ඇතුළු විවිධ ආකාරයේ චිත්‍රපට සහ කතාමාලා ලබාදීමයි. සෑම චිත්‍රපටයක්ම සිංහල උපසිරැසි සමඟ පරීක්ෂා කර ඇති බැවින් ඔබට <span style="color:#00ffd5; font-weight:600;">පහසුවෙන් භුක්ති විඳිය හැකිය</span>.
+    </p>
+
+    <p style="font-size:16px; line-height:1.8; color:#ddd; margin-bottom:20px;">
+      ත්‍රාසජනක Action, ආදරණීය Dramas, Horror, Comedy, සහ <span style="color:#ff003c; font-weight:600;">සියලුම වයස්වලට සුදුසු Sinhala Sub Cartoons</span> දක්වා — Movie Zone හි ඔබ සොයන සියල්ල තිබේ! අපි නිතරම නව content එකතු කරමින්, exclusive collections සහ upcoming premieres ගැන sneak peeks ලබාදෙමින් සිටිනවා.
+    </p>
+
+    <p style="font-size:16px; line-height:1.8; color:#ddd;">
+      <span style="color:#00ffd5; font-weight:700;">Movie Zone</span> එකට එක්ව ලෝකයේ හොඳම චිත්‍රපට සහ කතාමාලා සිංහල උපසිරැසි සමඟ භුක්ති විඳින්න. අපගේ Telegram channels වෙත subscribe වී latest releases කිසිවක් miss නොකරන්න! ඔබේ ආදරණීය චිත්‍රපට අත්දැකීම් වඩාත් විනෝදජනක කිරීමට අපි සැමවිටම කැපවී සිටිනවා.
+    </p>
+  </div>
+</div>
+
+
+
+<!-- SOCIAL MEDIA PAGE -->
+<div id="social" class="page">
+  <h2>🌐 Connect With Us</h2>
+  <div class="social-btns">
+    <a href="https://www.youtube.com/@MovieZoneLk-m7q" target="_blank" class="youtube"><i class="fab fa-youtube"></i> YouTube Channel</a>
+    <a href="https://t.me/Movie_Zone_Vip" target="_blank" class="telegram"><i class="fab fa-telegram"></i> Telegram Movie</a>
+    <a href="https://t.me/Tv_Series_Hub_Lk" target="_blank" class="telegram"><i class="fab fa-telegram"></i> Telegram TV Series</a>
+  </div>
+</div>
+
+
+<!-- FEEDBACK PAGE -->
+<div id="feedback" class="page">
+  <div class="feedback-form">
+    <h2>📬 Send Your Feedback</h2>
+    <input type="text" placeholder="Your Name" id="feedbackName">
+    
+    <textarea rows="5" placeholder="Your Feedback" id="feedbackMessage"></textarea>
+    <button onclick="submitFeedback()">Submit Feedback</button>
+  </div>
+</div>
+
+<!-- 18+ POPUP -->
+<div id="popup">
+  <div class="box">
+    <h3>⚠️ Warning!</h3>
+    <p>මෙහි වැඩිහිටියන්ට සුදුසු දර්ශන ඇතුලත් බව කරුනාවෙන් සලකන්න</p>
+    <button id="popupBtn">Continue</button>
+  </div>
+</div>
+
+<!-- DOWNLOAD PAGES -->
+<!-- Top 1 Movie -->
+<div id="download-top1" class="download-page">
+  <div class="close-download" onclick="closeDownload()">×</div>
+  <div class="download-box">
+    <img src="https://files.catbox.moe/obobt3.jpg" alt="After Evening">
+    <div class="download-content">
+      <h2>Maxxine</h2>
+      <p>ආකර්ෂණීය කතාවක් සහිත අමතක නොවන 18+ චිත්‍රපටයකි. High quality print සහ Sinhala & English subtitles ඇත.</p>
+      <div class="download-btns">
+        <a href="https://drive.google.com/file/d/EXAMPLE_LINK" target="_blank" class="google-btn"><i class="fab fa-google"></i> Google Download</a>
+        <a href="https://t.me/MoviePublish2025_bot?start=BQADAQADaQ8AArrFwEY3K5HNQwnR6BYE" target="_blank" class="telegram-btn"><i class="fab fa-telegram"></i> Telegram Download</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Trending Movies -->
+<div id="download-trending1" class="download-page">
+  <div class="close-download" onclick="closeDownload()">×</div>
+  <div class="download-box">
+    <img src="https://files.catbox.moe/obobt3.jpg" alt="After Evening">
+    <div class="download-content">
+      <h2>MaXXXine (2024) Sinhala Subtitles | සිංහල උපසිරැසි සමඟ | (18+)</h2>
+      <p>Intense drama with adult themes. Sinhala subtitles included.</p>
+      <div class="download-btns">
+        <a href="https://drive.usercontent.google.com/download?id=1_XQoEVwBnt3EAc8bDg6tTwL0HH_8Ddav&export=download" target="_blank" class="google-btn"><i class="fab fa-google"></i> Google Download</a>
+        <a href="https://t.me/MoviePublish2025_bot?start=BQADAQADaQ8AArrFwEY3K5HNQwnR6BYE" target="_blank" class="telegram-btn"><i class="fab fa-telegram"></i> Telegram Download</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="download-trending2" class="download-page">
+  <div class="close-download" onclick="closeDownload()">×</div>
+  <div class="download-box">
+    <img src="https://files.catbox.moe/y7jg05.jpg" alt="Hate Story 2012">
+    <div class="download-content">
+      <h2>Hate Story (2012) Sinhala Subtitles | සිංහල උපසිරැසි සමඟ | 18+</h2>
+      <p>Action-packed adult movie with Sinhala subs.</p>
+      <div class="download-btns">
+        <a href="https://drive.usercontent.google.com/download?id=1R4PWY7WTaJELIeWKWWPMpRG80JB6-pdu&export=download" target="_blank" class="google-btn"><i class="fab fa-google"></i> Google Download</a>
+        <a href="https://t.me/MoviePublish2025_bot?start=BQADAQADsRQAArrFyEaRNDf9X2NBCxYE" target="_blank" class="telegram-btn"><i class="fab fa-telegram"></i> Telegram Download</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="download-trending3" class="download-page">
+  <div class="close-download" onclick="closeDownload()">×</div>
+  <div class="download-box">
+    <img src="https://files.catbox.moe/y45yic.jpg" alt="Hate Story 2014">
+    <div class="download-content">
+      <h2>Hate Story 2 (2014) Sinhala Subtitles | සිංහල උපසිරැසි සමඟ | 18+</h2>
+      <p>Historical adult drama. Sinhala subtitles available.</p>
+      <div class="download-btns">
+        <a href="https://drive.usercontent.google.com/download?id=1cAgpei6-mX_ZouZU8ijiYvg8YJevMGMD&export=download" target="_blank" class="google-btn"><i class="fab fa-google"></i> Google Download</a>
+        <a href="https://t.me/MoviePublish2025_bot?start=BQADAQAD0hQAArrFyEYqCfGFw90G6xYE" target="_blank" class="telegram-btn"><i class="fab fa-telegram"></i> Telegram Download</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="download-trending4" class="download-page">
+  <div class="close-download" onclick="closeDownload()">×</div>
+  <div class="download-box">
+    <img src="https://files.catbox.moe/ev642m.jpg" alt="Hate Story 2015">
+    <div class="download-content">
+      <h2>Hate Story 3 (2015) Sinhala Subtitles | සිංහල උපසිරැසි සමඟ | 18+</h2>
+      <p>Thrilling adult movie with Sinhala subs.</p>
+      <div class="download-btns">
+        <a href="https://drive.usercontent.google.com/download?id=1fMboGG1G7MHUIq0Qb7nW7PJnCMSl00sD&export=download" target="_blank" class="google-btn"><i class="fab fa-google"></i> Google Download</a>
+        <a href="https://t.me/MoviePublish2025_bot?start=BQADAQADDRUAArrFyEaC9VTFW1cVtBYE" target="_blank" class="telegram-btn"><i class="fab fa-telegram"></i> Telegram Download</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Action Movies -->
+<div id="download-action1" class="download-page">
+  <div class="close-download" onclick="closeDownload()">×</div>
+  <div class="download-box">
+    <img src="https://files.catbox.moe/85zort.jpg" alt="Dawood">
+    <div class="download-content">
+      <h2>Dawood (2025) Sinhala Subtitles | සිංහල උපසිරැසි සමඟ</h2>
+      <p>High-octane action with drama. Sinhala subtitles.</p>
+      <div class="download-btns">
+        <a href="https://drive.usercontent.google.com/download?id=1WU3y455r7jd73hE5rGeSDenzuASU--n1&export=download" target="_blank" class="google-btn"><i class="fab fa-google"></i> Google Download</a>
+        <a href="https://t.me/MoviePublish2025_bot?start=BQADAQADxwcAArrFyEaAmZGV6Z_vzhYE" target="_blank" class="telegram-btn"><i class="fab fa-telegram"></i> Telegram Download</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="download-action2" class="download-page">
+  <div class="close-download" onclick="closeDownload()">×</div>
+  <div class="download-box">
+    <img src="https://files.catbox.moe/lkqj8w.jpg" alt="Kalamkaval">
+    <div class="download-content">
+      <h2>Kalamkaval (2025) Sinhala Subtitles | සිංහල උපසිරැසි සමඟ</h2>
+      <p>Thrilling chase sequences. Sinhala subs included.</p>
+      <div class="download-btns">
+        <a href="https://drive.usercontent.google.com/download?id=1qw7r0SqLsxUmPM2pxT9QA5FeOVVf2NvQ&export=download" target="_blank" class="google-btn"><i class="fab fa-google"></i> Google Download</a>
+        <a href="https://t.me/MoviePublish2025_bot?start=BQADAQADoBUAArrFyEbb9oQ3SDnOexYE" target="_blank" class="telegram-btn"><i class="fab fa-telegram"></i> Telegram Download</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="download-action3" class="download-page">
+  <div class="close-download" onclick="closeDownload()">×</div>
+  <div class="download-box">
+    <img src="https://files.catbox.moe/hcgzne.jpg" alt="Hunting Season">
+    <div class="download-content">
+      <h2>Hunting Season (2025) Sinhala Subtitles | සිංහල උපසිරැසි සමඟ</h2>
+      <p>Epic action movie. Sinhala subtitles.</p>
+      <div class="download-btns">
+        <a href="https://drive.usercontent.google.com/download?id=13VGR1ff9alDDJwtIlbVDiHozLMyu8I3D&export=download" target="_blank" class="google-btn"><i class="fab fa-google"></i> Google Download</a>
+        <a href="https://t.me/MoviePublish2025_bot?start=BQADAQAD4BUAArrFyEYivp1_cK5iSxYE" target="_blank" class="telegram-btn"><i class="fab fa-telegram"></i> Telegram Download</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="download-action4" class="download-page">
+  <div class="close-download" onclick="closeDownload()">×</div>
+  <div class="download-box">
+    <img src="https://files.catbox.moe/i5icdn.jpg" alt="Nuremberg">
+    <div class="download-content">
+      <h2>Nuremberg (2025) Sinhala Subtitles | සිංහල උපසිරැසි සමඟ</h2>
+      <p>Intense war action. Sinhala subs.</p>
+      <div class="download-btns">
+        <a href="https://drive.usercontent.google.com/download?id=1Oe-Aln09PZShIF_3wlD0KCSyVgHEQ0Gd&export=download" target="_blank" class="google-btn"><i class="fab fa-google"></i> Google Download</a>
+        <a href="https://t.me/MoviePublish2025_bot?start=BQADAQADHxYAArrFyEZOg70T0sLXbBYE" target="_blank" class="telegram-btn"><i class="fab fa-telegram"></i> Telegram Download</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Cartoons -->
+<div id="download-cartoon1" class="download-page">
+  <div class="close-download" onclick="closeDownload()">×</div>
+  <div class="download-box">
+    <img src="https://files.catbox.moe/3ahnvh.jpg" alt="A Named Charlie Brown">
+    <div class="download-content">
+      <h2>A Boy Named Charlie Brown (1969) Sinhala Subtitles | සිංහල උපසිරැසි සමඟ</h2>
+      <p>Fun cartoon with Sinhala subtitles for all ages.</p>
+      <div class="download-btns">
+        <a href="https://drive.usercontent.google.com/download?id=13eGPGWpi9UTgdiz_2gtgPn0eBkbfroy1&export=download" target="_blank" class="google-btn"><i class="fab fa-google"></i> Google Download</a>
+        <a href="https://t.me/MoviePublish2025_bot?start=BQADAQADcBYAArrFyEaSG1zCgMwn_xYE" target="_blank" class="telegram-btn"><i class="fab fa-telegram"></i> Telegram Download</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="download-cartoon2" class="download-page">
+  <div class="close-download" onclick="closeDownload()">×</div>
+  <div class="download-box">
+    <img src="https://i.imgur.com/2n5L8rT.jpg" alt="Cartoon Fun 2">
+    <div class="download-content">
+      <h2>Cartoon Fun 2</h2>
+      <p>Entertaining cartoon with Sinhala subs.</p>
+      <div class="download-btns">
+        <a href="https://drive.google.com/file/d/EXAMPLE_LINK" target="_blank" class="google-btn"><i class="fab fa-google"></i> Google Download</a>
+        <a href="https://t.me/Movie_Zone_Vip" target="_blank" class="telegram-btn"><i class="fab fa-telegram"></i> Telegram Download</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="download-cartoon3" class="download-page">
+  <div class="close-download" onclick="closeDownload()">×</div>
+  <div class="download-box">
+    <img src="https://i.imgur.com/3n5L7rT.jpg" alt="Cartoon Fun 3">
+    <div class="download-content">
+      <h2>Cartoon Fun 3</h2>
+      <p>Family-friendly cartoon. Sinhala subtitles.</p>
+      <div class="download-btns">
+        <a href="https://drive.google.com/file/d/EXAMPLE_LINK" target="_blank" class="google-btn"><i class="fab fa-google"></i> Google Download</a>
+        <a href="https://t.me/Movie_Zone_Vip" target="_blank" class="telegram-btn"><i class="fab fa-telegram"></i> Telegram Download</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="download-cartoon4" class="download-page">
+  <div class="close-download" onclick="closeDownload()">×</div>
+  <div class="download-box">
+    <img src="https://i.imgur.com/4n5L6rT.jpg" alt="Cartoon Fun 4">
+    <div class="download-content">
+      <h2>Cartoon Fun 4</h2>
+      <p>Another great cartoon with Sinhala subs.</p>
+      <div class="download-btns">
+        <a href="https://drive.google.com/file/d/EXAMPLE_LINK" target="_blank" class="google-btn"><i class="fab fa-google"></i> Google Download</a>
+        <a href="https://t.me/Movie_Zone_Vip" target="_blank" class="telegram-btn"><i class="fab fa-telegram"></i> Telegram Download</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<footer>© Movie Zone</footer>
+
+<script>
+let pendingDownload = '';
+
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  closeDownload();
+}
+
+function showDownload(id){
+  document.getElementById('download-' + id).classList.add('active');
+}
+
+function closeDownload(){
+  document.querySelectorAll('.download-page').forEach(p=>p.classList.remove('active'));
+}
+
+function showPopupThenDownload(id){
+  pendingDownload = id;
+  document.getElementById('popup').classList.add('active');
+}
+
+document.getElementById('popupBtn').addEventListener('click',()=>{
+  document.getElementById('popup').classList.remove('active');
+  if(pendingDownload){
+    showDownload(pendingDownload);
+    pendingDownload = '';
+  }
+});
+
+// Feedback submission
+function submitFeedback(){
+  const name = document.getElementById('feedbackName').value.trim();
+  const message = document.getElementById('feedbackMessage').value.trim();
+
+  if(!name || !message){
+    alert('Please fill in all fields!');
+    return;
+  }
+
+  // Telegram Bot API URL
+  const botToken = '8361090612:AAEmTS8P7DEPnn-YsuJR0wBjSR92fnxFwI0'; // Bot token from BotFather
+  const chatId = '8452357204';     // Your Telegram chat ID
+  const text = `📝 New Feedback\n\nName: ${name}\nMessage: ${message}`;
+
+  fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({ chat_id: chatId, text: text })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if(data.ok){
+      alert('Feedback එකට ස්තූතියි! 😊');
+      document.getElementById('feedbackName').value = '';
+      document.getElementById('feedbackMessage').value = '';
+    } else {
+      alert('Feedback යැවීමේදී දෝෂයක් ඇතිවී ඇත. නැවත උත්සාහ කරන්න.');
+    }
+  })
+  .catch(err => {
+    console.error(err);
+    alert('Network error! Feedback යැවිය නොහැක.');
+  });
+}
+</script>
+
+</body>
+</html>
